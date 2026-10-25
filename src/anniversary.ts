@@ -19,7 +19,7 @@ interface DateFilter {
 	date: Date;
 }
 
-const dateValue = /^(\d{4}|\?{4}|x{4})-(\d{1,2})-(\d{1,2})/i;
+const dateValue = /^(\d{4}|\?{4}|x{4}|y{4})-(\d{1,2})-(\d{1,2})/i;
 
 export function isAnniversaryKey(key: string): boolean {
 	return /^anniversary(?:-|$)/i.test(key);
@@ -34,7 +34,7 @@ export function hasNotodayOption(source: string): boolean {
 }
 
 function getAnniversaryYear(anniversary: Anniversary): number | null {
-	const yearMatch = anniversary.date.match(/^(\d{4}|\?{4}|x{4})-/i);
+	const yearMatch = anniversary.date.match(/^(\d{4}|\?{4}|x{4}|y{4})-/i);
 	if (!yearMatch?.[1] || !/^\d{4}$/.test(yearMatch[1]) || yearMatch[1] === '0000') return null;
 	return Number(yearMatch[1]);
 }

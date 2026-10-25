@@ -5,12 +5,12 @@ This lightweight plugin finds anniversary entries in your Obsidian vault and dis
 ## Features
 
 - Add one or more anniversaries to a page using its YAML frontmatter.
-- Use an unknown year (`????`, `0000`, or `xxxx`) when it is not known.
+- Use an unknown year (`????`, `0000`, `xxxx`, or `yyyy`) when it is not known.
 - View all found anniversaries, sorted by month and day.
 
 ## Instructions
 
-Add an `anniversary` property to the YAML frontmatter of a Markdown page. The value must be a quoted date in `YYYY-M-D` format (month and day may each use one or two digits); the year may instead be `????`, `0000`, or `xxxx`. Add further entries using `anniversary-<category>` keys, where `<category>` is a non-empty name made of letters, numbers, or hyphens.
+Add an `anniversary` property to the YAML frontmatter of a Markdown page. The value must be a quoted date in `YYYY-M-D` format (month and day may each use one or two digits); the year may instead be `????`, `0000`, `xxxx`, or `yyyy`. Add further entries using `anniversary-<category>` keys, where `<category>` is a non-empty name made of letters, numbers, or hyphens.
 
 ```yaml
 ---

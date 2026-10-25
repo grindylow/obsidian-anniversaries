@@ -100,6 +100,9 @@ describe('formatAnniversary', () => {
 		expect(formatAnniversary({
 			category: 'birthday', name: 'Ada Lovelace', date: 'xxxx-12-10', month: 12, day: 10, file: 'Ada.md'
 		}, new Date(2026, 9, 25))).toBe('xxxx-12-10 Ada Lovelace (birthday)');
+		expect(formatAnniversary({
+			category: 'birthday', name: 'Ada Lovelace', date: 'yyyy-12-10', month: 12, day: 10, file: 'Ada.md'
+		}, new Date(2026, 9, 25))).toBe('yyyy-12-10 Ada Lovelace (birthday)');
 	});
 });
 
@@ -126,6 +129,7 @@ describe('isAnniversaryKey', () => {
 describe('parseAnniversaryFrontmatter', () => {
 	it.each([
 		['anniversary', 'xxxx-02-28', 'birthday', 'xxxx-02-28'],
+		['anniversary', 'yyyy-02-28', 'birthday', 'yyyy-02-28'],
 		['anniversary', '????-02-28', 'birthday', '????-02-28'],
 		['anniversary', '0000-02-29', 'birthday', '0000-02-29'],
 		['anniversary', '2024-02-29', 'birthday', '2024-02-29'],

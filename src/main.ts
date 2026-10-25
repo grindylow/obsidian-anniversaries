@@ -47,7 +47,7 @@ function renderAnniversaries(el: HTMLElement, anniversaries: Anniversary[], unpa
 		}
 		for (const warning of codeWarnings) warningList.createEl('li', { text: warning });
 		const help = warningDetails.createEl('p');
-		help.appendText('Resolve these entries or options, or see the ');
+		help.appendText('To resolve these issues, please see the ');
 		help.createEl('a', { text: 'plugin GitHub repository', href: 'https://github.com/grindylow/obsidian-anniversaries' });
 		help.appendText(' for help.');
 	}
