@@ -22,7 +22,22 @@ anniversary-wedding: "1835-07-08"
 
 The page title is used as the anniversary name. The exact `anniversary` property defaults to the `birthday` category; the suffix of an `anniversary-<category>` key supplies the category. Any text after a valid date is treated as a category label and overrides the key suffix. If the trailing text is enclosed in parentheses, the parentheses are removed (for example, `"0000-10-12 (Wedding)"` displays the category as `Wedding`). Anniversary entries in the body of a page are not supported.
 
-To display the list, open the Command Palette (**Ctrl+P** on Windows/Linux, **Cmd+P** on macOS) and run **Check anniversaries**. The plugin currently lists all anniversaries in the vault; it does not calculate upcoming or recently passed occurrences.
+To display the list in a note, add an `anniversaries` code block:
+
+````markdown
+```anniversaries
+```
+````
+
+The block lists all anniversaries in the vault as `YYYY-MM-DD <page title> (<type of anniversary>)`, and any unparsable anniversary entries as warnings. Add `nowarnings` inside the block to suppress warnings:
+
+````markdown
+```anniversaries
+nowarnings
+```
+````
+
+You can also open the Command Palette (**Ctrl+P** on Windows/Linux, **Cmd+P** on macOS) and run **Check anniversaries** to see the list with warnings. The plugin currently lists all anniversaries; it does not calculate upcoming or recently passed occurrences.
 
 ## Why is this plugin needed?
 
