@@ -1,3 +1,4 @@
+// Parses and validates anniversary dates stored in page frontmatter.
 export interface Anniversary {
 	category: string;
 	name: string;
@@ -7,23 +8,14 @@ export interface Anniversary {
 	file: string;
 }
 
-const anniversaryLine = /^\s*(?:[-*+]|\d+\.)\s+\[anniversary\]\s+(?:(.*?)\s+::\s*)?(\S+)\s*$/i;
-const categoryPrefix = /^([a-z][a-z0-9-]*):(?:\s+(.*))?$/i;
 const dateValue = /^(\d{4}|\?{4}|x{4})-(\d{2})-(\d{2})$/i;
 
-export function parseAnniversaryLine(line: string, file: string, pageTitle: string): Anniversary | null {
-	const match = line.match(anniversaryLine);
-	if (!match) return null;
+export function parseAnniversaryFrontmatter(value: unknown, file: string, pageTitle: string): Anniversary | null {
+	if (typeof value !== 'string') return null;
 
-	const details = match[1]?.trim() ?? '';
-	const rawDate = match[2];
-	if (!rawDate) return null;
-
-	const categoryMatch = details.match(categoryPrefix);
-	const category = categoryMatch?.[1]?.toLowerCase() ?? 'birthday';
-	const name = (categoryMatch ? categoryMatch[2]?.trim() : details) || pageTitle;
-	const dateMatch = rawDate.match(dateValue);
-	if (!dateMatch || !name) return null;
+	const date = value.trim();
+	const dateMatch = date.match(dateValue);
+	if (!dateMatch) return null;
 
 	const yearPart = dateMatch[1];
 	const monthPart = dateMatch[2];
@@ -36,5 +28,5 @@ export function parseAnniversaryLine(line: string, file: string, pageTitle: stri
 	const parsedDate = new Date(Date.UTC(validationYear, month - 1, day));
 	if (parsedDate.getUTCFullYear() !== validationYear || parsedDate.getUTCMonth() !== month - 1 || parsedDate.getUTCDate() !== day) return null;
 
-	return { category, name, date: rawDate, month, day, file };
+	return { category: 'birthday', name: pageTitle, date, month, day, file };
 }

@@ -1,5 +1,6 @@
+// Registers the vault-wide anniversary command and renders matching frontmatter entries.
 import { Modal, Plugin } from 'obsidian';
-import { parseAnniversaryLine } from './anniversary';
+import { parseAnniversaryFrontmatter } from './anniversary';
 import type { Anniversary } from './anniversary';
 
 class AnniversaryModal extends Modal {
@@ -25,18 +26,18 @@ export default class AnniversaryReminderPlugin extends Plugin {
 		const openAnniversaries = async () => {
 			const anniversaries: Anniversary[] = [];
 			for (const file of this.app.vault.getMarkdownFiles()) {
-				const content = await this.app.vault.cachedRead(file);
-				for (const line of content.split(/\r?\n/)) {
-					const anniversary = parseAnniversaryLine(line, file.path, file.basename);
-					if (anniversary) anniversaries.push(anniversary);
-				}
+				const cache = this.app.metadataCache.getFileCache(file);
+				const frontmatter = cache?.frontmatter;
+				if (!frontmatter || !Object.prototype.hasOwnProperty.call(frontmatter, 'anniversary')) continue;
+
+				const anniversary = parseAnniversaryFrontmatter(frontmatter.anniversary, file.path, file.basename);
+				if (anniversary) anniversaries.push(anniversary);
 			}
 
 			anniversaries.sort((a, b) => a.month - b.month || a.day - b.day || a.name.localeCompare(b.name));
 			new AnniversaryModal(this, anniversaries).open();
 		};
 
-		this.addRibbonIcon('calendar-heart', 'Check anniversaries', openAnniversaries);
 		this.addCommand({
 			id: 'check-anniversaries',
 			name: 'Check anniversaries',

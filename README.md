@@ -4,25 +4,23 @@ This lightweight plugin finds anniversary entries in your Obsidian vault and dis
 
 ## Features
 
-- Add one or multiple anniversaries to any page using Markdown list items.
-- Specify the type of anniversary (birth, death, wedding, work, etc.) and an optional name.
+- Add an anniversary to a page using its YAML frontmatter.
 - Use an unknown year (`????`, `0000`, or `xxxx`) when it is not known.
 - View all found anniversaries, sorted by month and day.
 
 ## Instructions
 
-Add anniversary entries to the **body** of a Markdown page:
+Add an `anniversary` property to the YAML frontmatter of a Markdown page. The value must be a quoted date in `YYYY-MM-DD` format; the year may instead be `????`, `0000`, or `xxxx`.
 
-```markdown
-- [anniversary] 1815-12-10
-- [anniversary] death: Ada Lovelace :: 1852-11-27
-- [anniversary] wedding: Parents :: 2001-06-15
-- [anniversary] xxxx-02-16
+```yaml
+---
+anniversary: "1815-12-10"
+---
 ```
 
-The first entry uses the page title as its name and defaults to the `birthday` category. For other entries, the category and name before `::` are optional; when the name is omitted, the page title is used. Dates must use the `YYYY-MM-DD` format, except that the year may be `????`, `0000`, or `xxxx`.
+The page title is used as the anniversary name and the category defaults to `birthday`. For now, only the exact `anniversary` property is supported; properties such as `anniversary-death` are ignored. Anniversary entries in the body of a page are not supported.
 
-To display the list, click the **Check anniversaries** ribbon icon or open the Command Palette (**Ctrl+P** on Windows/Linux, **Cmd+P** on macOS) and run **Check anniversaries**. The plugin currently lists all anniversaries in the vault; it does not calculate upcoming or recently passed occurrences. Anniversary definitions in YAML frontmatter and embedded `anniversaries` code blocks are not currently supported.
+To display the list, open the Command Palette (**Ctrl+P** on Windows/Linux, **Cmd+P** on macOS) and run **Check anniversaries**. The plugin currently lists all anniversaries in the vault; it does not calculate upcoming or recently passed occurrences.
 
 ## Why is this plugin needed?
 
