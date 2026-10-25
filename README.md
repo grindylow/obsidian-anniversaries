@@ -49,7 +49,17 @@ happens before tomorrow
 ```
 ````
 
-The bounds are exclusive, so `after yesterday` and `before tomorrow` include today; an anniversary exactly on the `2 weeks ago` boundary is excluded. `happens` filters may also use `on`, `on or after`, and `on or before` with relative dates (`today`, `tomorrow`, `2 weeks ago`, `in 3 days`) or a date such as `2026-10-25`.
+The bounds are exclusive, so `after yesterday` and `before tomorrow` include today; an anniversary exactly on the `2 weeks ago` boundary is excluded. Unknown code-block options and malformed filters are listed as collapsed warnings. Use `notoday` to omit the dated `today` marker. `happens` filters may also use `on`, `on or after`, and `on or before` with relative dates (`today`, `tomorrow`, `2 weeks ago`, `in 3 days`) or a date such as `2026-10-25`.
+
+Override the reference date by adding `today YYYY-MM-DD` to the code block. Relative filters, the dated today marker, and `(X years ago)` labels all use this date. The marker is suffixed with `(overridden)` to make the override visible. For example:
+
+````markdown
+```anniversaries
+today 2000-10-25
+happens after yesterday
+happens before in two weeks
+```
+````
 
 Add `nowarnings` alongside the filters to hide warnings:
 

@@ -1,6 +1,39 @@
 // Tests parsing and validation of anniversary frontmatter values.
 import { describe, expect, it } from 'vitest';
-import { filterAnniversaries, formatAnniversary, formatTodayEntry, hasNowarningsOption, isAnniversaryKey, parseAnniversaryFrontmatter } from './anniversary';
+import { filterAnniversaries, formatAnniversary, formatTodayEntry, getCodeBlockWarnings, getTodayOverride, hasNotodayOption, hasNowarningsOption, isAnniversaryKey, parseAnniversaryFrontmatter } from './anniversary';
+
+describe('getTodayOverride', () => {
+	it('parses a valid override and falls back for invalid or repeated values', () => {
+		const fallback = new Date(2026, 9, 25);
+		expect(getTodayOverride('today 2000-10-25', fallback)).toEqual(new Date(2000, 9, 25));
+		expect(getTodayOverride('today 2000-02-30', fallback)).toBe(fallback);
+		expect(getTodayOverride('today 2000-10-25\ntoday 2001-10-25', fallback)).toBe(fallback);
+	});
+});
+
+describe('getCodeBlockWarnings', () => {
+	it('warns on unknown options and malformed happens filters', () => {
+		expect(getCodeBlockWarnings(`nowranings
+happens after someday`)).toEqual([
+			'Unknown option: nowranings',
+			'Invalid happens filter: happens after someday'
+		]);
+	});
+
+	it('accepts supported options, today overrides, and date filters', () => {
+		expect(getCodeBlockWarnings(`nowarnings
+notoday
+today 2000-10-25
+happens after 2 weeks ago
+happens before tomorrow`)).toEqual([]);
+	});
+
+	it('warns when a today override is malformed or repeated', () => {
+		expect(getCodeBlockWarnings(`today someday`)).toContain('Invalid today override: today someday');
+		expect(getCodeBlockWarnings(`today 2000-10-25
+today 2001-10-25`)).toContain('Only one today override may be specified.');
+	});
+});
 
 describe('filterAnniversaries', () => {
 	const items = [
@@ -32,6 +65,13 @@ happens before tomorrow`, today).map((item) => item.name)).toEqual(['Recent', 'T
 		expect(filterAnniversaries(items, 'happens after someday', today)).toEqual(items);
 	});
 
+	it('evaluates relative filters from the overridden date', () => {
+		const override = 'today 2026-11-01';
+		expect(filterAnniversaries(items, `${override}\nhappens on today`, today).map((item) => item.name)).toEqual([]);
+		expect(filterAnniversaries(items, `${override}\nhappens on or after in 5 days\nhappens before in 7 days`, today).map((item) => item.name)).toEqual(['Two Weeks']);
+		expect(formatAnniversary(items[2]!, getTodayOverride(override, today))).toContain('(26 years ago)');
+	});
+
 	it('matches dates in a requested range across year boundaries', () => {
 		const winterItems = [
 			{ category: 'birthday', name: 'New Year', date: '2000-01-01', month: 1, day: 1, file: 'New Year.md' },
@@ -43,8 +83,9 @@ happens before tomorrow`, new Date(2026, 0, 3)).map((item) => item.name)).toEqua
 });
 
 describe('formatTodayEntry', () => {
-	it('includes the current local date', () => {
+	it('includes the current local date and indicates when it is overridden', () => {
 		expect(formatTodayEntry(new Date(2026, 9, 25))).toBe('2026-10-25 today');
+		expect(formatTodayEntry(new Date(2026, 9, 25), true)).toBe('2026-10-25 today (overridden)');
 	});
 });
 
