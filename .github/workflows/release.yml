@@ -1,0 +1,96 @@
+# Verifies a requested tag against manifest.json, packages the plugin, and publishes a GitHub release.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact x.y.z version that must match manifest.json
+        required: true
+        type: string
+      draft:
+        description: Create as a draft release (recommended when testing)
+        required: true
+        default: true
+        type: boolean
+      prerelease:
+        description: Mark as a prerelease
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out selected branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }}
+          fetch-depth: 0
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Run tests
+        run: npm test
+      - name: Verify manifest version and prepare tag
+        id: tag
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+          VERSION: ${{ inputs.version }}
+          DRAFT_INPUT: ${{ inputs.draft }}
+          PRERELEASE_INPUT: ${{ inputs.prerelease }}
+        run: |
+          set -euo pipefail
+          if [[ "$REF_TYPE" != "branch" ]]; then
+            echo "Release must be run from a branch." >&2
+            exit 1
+          fi
+          node scripts/validate-version.mjs "$VERSION"
+          MANIFEST_VERSION="$(node -p "require('./manifest.json').version")"
+          if [[ "$VERSION" != "$MANIFEST_VERSION" ]]; then
+            echo "Requested tag '$VERSION' does not match manifest version '$MANIFEST_VERSION'." >&2
+            exit 1
+          fi
+          if [[ "$REF_NAME" != "main" && ( "$DRAFT_INPUT" != "true" || "$PRERELEASE_INPUT" != "true" ) ]]; then
+            echo "Releases from non-main branches must be both draft and prerelease." >&2
+            exit 1
+          fi
+          if git rev-parse "$VERSION" >/dev/null 2>&1 || git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists." >&2
+            exit 1
+          fi
+          git tag -a "$VERSION" -m "Release $VERSION"
+          echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "draft=$DRAFT_INPUT" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE_INPUT" >> "$GITHUB_OUTPUT"
+      - name: Build and package
+        run: npm run release:prepare
+      - name: Create installable archive
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: zip -j "dist/release/anniversary-reminder-${TAG}.zip" dist/release/main.js dist/release/manifest.json
+      - name: Push tag after successful build
+        env:
+          TAG: ${{ steps.tag.outputs.tag }}
+        run: git push origin "$TAG"
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.tag.outputs.tag }}
+          DRAFT: ${{ steps.tag.outputs.draft }}
+          PRERELEASE: ${{ steps.tag.outputs.prerelease }}
+        run: |
+          args=()
+          if [[ "$DRAFT" == "true" ]]; then args+=(--draft); fi
+          if [[ "$PRERELEASE" == "true" ]]; then args+=(--prerelease); fi
+          gh release create "$TAG" dist/release/main.js dist/release/manifest.json dist/release/*.zip \
+            --title "$TAG" --generate-notes "${args[@]}"

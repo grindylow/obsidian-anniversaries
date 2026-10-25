@@ -1,5 +1,6 @@
 node_modules/
 /dist/
 
-# Ignore the local Obsidian test vault.
+# Ignore plugin build output and local test vaults.
+/main.js
 /testvault/
