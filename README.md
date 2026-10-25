@@ -7,6 +7,7 @@ This lightweight plugin finds anniversary entries in your Obsidian vault and dis
 - Add one or more anniversaries to a page using its YAML frontmatter.
 - Use an unknown year (`????`, `0000`, `xxxx`, or `yyyy`) when it is not known.
 - View all found anniversaries, sorted by month and day.
+- TASKS-like syntax for limiting list of anniversaries to those that will take place in a specified timeframe (for example "happens before in 2 weeks")
 
 ## Instructions
 
@@ -20,7 +21,7 @@ anniversary-wedding: "1835-07-08"
 ---
 ```
 
-The page title is used as the anniversary name. The exact `anniversary` property defaults to the `birthday` category; the suffix of an `anniversary-<category>` key supplies the category. Any text after a valid date is treated as a category label and overrides the key suffix. If the trailing text is enclosed in parentheses, the parentheses are removed (for example, `"0000-10-12 (Wedding)"` displays the category as `Wedding`). Anniversary entries in the body of a page are not supported.
+The page title is used as the anniversary name. The exact `anniversary` property defaults to the `birthday` category; the suffix of an `anniversary-<category>` key supplies the category. Any text after a valid date is treated as a category label and overrides the key suffix. If the trailing text is enclosed in parentheses, the parentheses are removed (for example, `"0000-10-12 (Wedding)"` displays the category as `Wedding`).
 
 To display the list in a note, add an `anniversaries` code block:
 
@@ -71,8 +72,6 @@ nowarnings
 ```
 ````
 
-You can also open the Command Palette (**Ctrl+P** on Windows/Linux, **Cmd+P** on macOS) and run **Check anniversaries** to see the full list with warnings.
-
 ## Why is this plugin needed?
 
 - Plugins such as TASKS require full date specifications (including year). Also, although you can define "recurring" tasks, tasks for future occurrences are only generated once the current occurrence has been checked off.
@@ -81,3 +80,4 @@ You can also open the Command Palette (**Ctrl+P** on Windows/Linux, **Cmd+P** on
 ## Notable limitations
 
 - Gregorian calendar only.
+- Anniversary entries in the body of a page are not supported. This is an informed design decision. We do not want to scan the entire vault, and the Obsidian frontmatter is the ideal place for such data.

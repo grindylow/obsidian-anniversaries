@@ -1,5 +1,5 @@
 // Registers anniversary commands and renders vault-wide anniversary code blocks.
-import { Modal, Plugin } from 'obsidian';
+import { Plugin } from 'obsidian';
 import { filterAnniversaries, formatAnniversary, formatTodayEntry, getCodeBlockWarnings, getTodayOverride, hasNotodayOption, hasNowarningsOption, isAnniversaryKey, parseAnniversaryFrontmatter } from './anniversary';
 import type { Anniversary, UnparsableAnniversary } from './anniversary';
 
@@ -53,14 +53,6 @@ function renderAnniversaries(el: HTMLElement, anniversaries: Anniversary[], unpa
 	}
 }
 
-class AnniversaryModal extends Modal {
-	constructor(plugin: AnniversaryReminderPlugin, anniversaries: Anniversary[], unparsable: UnparsableAnniversary[]) {
-		super(plugin.app);
-		this.setTitle('Anniversaries');
-		renderAnniversaries(this.contentEl, anniversaries, unparsable);
-	}
-}
-
 export default class AnniversaryReminderPlugin extends Plugin {
 	private async collectAnniversaries() {
 		const anniversaries: Anniversary[] = [];
@@ -91,13 +83,5 @@ export default class AnniversaryReminderPlugin extends Plugin {
 			renderAnniversaries(el, anniversaries, unparsable, hasNowarningsOption(source), hasNotodayOption(source), codeWarnings, today, todayOverridden);
 		});
 
-		this.addCommand({
-			id: 'check-anniversaries',
-			name: 'Check anniversaries',
-			callback: async () => {
-				const { anniversaries, unparsable } = await this.collectAnniversaries();
-				new AnniversaryModal(this, anniversaries, unparsable).open();
-			}
-		});
 	}
 }
