@@ -10,8 +10,9 @@ export interface Anniversary {
 
 const dateValue = /^(\d{4}|\?{4}|x{4})-(\d{2})-(\d{2})$/i;
 
-export function parseAnniversaryFrontmatter(value: unknown, file: string, pageTitle: string): Anniversary | null {
-	if (typeof value !== 'string') return null;
+export function parseAnniversaryFrontmatter(key: string, value: unknown, file: string, pageTitle: string): Anniversary | null {
+	const keyMatch = key.match(/^anniversary(?:-([a-z][a-z0-9-]*))?$/i);
+	if (!keyMatch || typeof value !== 'string') return null;
 
 	const date = value.trim();
 	const dateMatch = date.match(dateValue);
@@ -28,5 +29,5 @@ export function parseAnniversaryFrontmatter(value: unknown, file: string, pageTi
 	const parsedDate = new Date(Date.UTC(validationYear, month - 1, day));
 	if (parsedDate.getUTCFullYear() !== validationYear || parsedDate.getUTCMonth() !== month - 1 || parsedDate.getUTCDate() !== day) return null;
 
-	return { category: 'birthday', name: pageTitle, date, month, day, file };
+	return { category: keyMatch[1]?.toLowerCase() ?? 'birthday', name: pageTitle, date, month, day, file };
 }

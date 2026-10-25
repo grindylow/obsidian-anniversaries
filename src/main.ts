@@ -28,10 +28,12 @@ export default class AnniversaryReminderPlugin extends Plugin {
 			for (const file of this.app.vault.getMarkdownFiles()) {
 				const cache = this.app.metadataCache.getFileCache(file);
 				const frontmatter = cache?.frontmatter;
-				if (!frontmatter || !Object.prototype.hasOwnProperty.call(frontmatter, 'anniversary')) continue;
+				if (!frontmatter) continue;
 
-				const anniversary = parseAnniversaryFrontmatter(frontmatter.anniversary, file.path, file.basename);
-				if (anniversary) anniversaries.push(anniversary);
+				for (const [key, value] of Object.entries(frontmatter)) {
+					const anniversary = parseAnniversaryFrontmatter(key, value, file.path, file.basename);
+					if (anniversary) anniversaries.push(anniversary);
+				}
 			}
 
 			anniversaries.sort((a, b) => a.month - b.month || a.day - b.day || a.name.localeCompare(b.name));
