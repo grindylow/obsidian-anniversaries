@@ -8,7 +8,7 @@ export interface Anniversary {
 	file: string;
 }
 
-const dateValue = /^(\d{4}|\?{4}|x{4})-(\d{2})-(\d{2})$/i;
+const dateValue = /^(\d{4}|\?{4}|x{4})-(\d{1,2})-(\d{1,2})/i;
 
 export interface UnparsableAnniversary {
 	key: string;
@@ -24,9 +24,16 @@ export function parseAnniversaryFrontmatter(key: string, value: unknown, file: s
 	const keyMatch = key.match(/^anniversary(?:-([a-z][a-z0-9-]*))?$/i);
 	if (!keyMatch || typeof value !== 'string') return null;
 
-	const date = value.trim();
-	const dateMatch = date.match(dateValue);
+	const rawValue = value.trim();
+	const dateMatch = rawValue.match(dateValue);
 	if (!dateMatch) return null;
+	if (dateMatch[0].length < rawValue.length && !/\s/.test(rawValue[dateMatch[0].length] ?? '')) return null;
+
+	const date = dateMatch[0];
+	let trailingText = rawValue.slice(date.length).trim();
+	if (trailingText.startsWith('(') && trailingText.endsWith(')')) {
+		trailingText = trailingText.slice(1, -1).trim();
+	}
 
 	const yearPart = dateMatch[1];
 	const monthPart = dateMatch[2];
@@ -39,5 +46,6 @@ export function parseAnniversaryFrontmatter(key: string, value: unknown, file: s
 	const parsedDate = new Date(Date.UTC(validationYear, month - 1, day));
 	if (parsedDate.getUTCFullYear() !== validationYear || parsedDate.getUTCMonth() !== month - 1 || parsedDate.getUTCDate() !== day) return null;
 
-	return { category: keyMatch[1]?.toLowerCase() ?? 'birthday', name: pageTitle, date, month, day, file };
+	const category = trailingText || keyMatch[1]?.toLowerCase() || 'birthday';
+	return { category, name: pageTitle, date, month, day, file };
 }

@@ -10,17 +10,17 @@ This lightweight plugin finds anniversary entries in your Obsidian vault and dis
 
 ## Instructions
 
-Add an `anniversary` property to the YAML frontmatter of a Markdown page. The value must be a quoted date in `YYYY-MM-DD` format; the year may instead be `????`, `0000`, or `xxxx`. Add further entries using `anniversary-<category>` keys, where `<category>` is a lowercase category name made of letters, numbers, or hyphens.
+Add an `anniversary` property to the YAML frontmatter of a Markdown page. The value must be a quoted date in `YYYY-M-D` format (month and day may each use one or two digits); the year may instead be `????`, `0000`, or `xxxx`. Add further entries using `anniversary-<category>` keys, where `<category>` is a lowercase category name made of letters, numbers, or hyphens.
 
 ```yaml
 ---
 anniversary: "1815-12-10"
 anniversary-death: "1852-11-27"
-anniversary-wedding: "2001-06-15"
+anniversary-wedding: "1835-07-08"
 ---
 ```
 
-The page title is used as the anniversary name. The exact `anniversary` property defaults to the `birthday` category; the suffix of an `anniversary-<category>` key supplies the category. Anniversary entries in the body of a page are not supported.
+The page title is used as the anniversary name. The exact `anniversary` property defaults to the `birthday` category; the suffix of an `anniversary-<category>` key supplies the category. Any text after a valid date is treated as a category label and overrides the key suffix. If the trailing text is enclosed in parentheses, the parentheses are removed (for example, `"0000-10-12 (Wedding)"` displays the category as `Wedding`). Anniversary entries in the body of a page are not supported.
 
 To display the list, open the Command Palette (**Ctrl+P** on Windows/Linux, **Cmd+P** on macOS) and run **Check anniversaries**. The plugin currently lists all anniversaries in the vault; it does not calculate upcoming or recently passed occurrences.
 
