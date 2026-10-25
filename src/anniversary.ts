@@ -130,7 +130,7 @@ export function getCodeBlockWarnings(source: string, today = new Date()): string
 	if (todayLines.length > 1) warnings.push('Only one today override may be specified.');
 	for (const rawLine of source.split(/\r?\n/)) {
 		const line = rawLine.trim();
-		if (!line) continue;
+		if (!line || line.startsWith('#')) continue;
 		const option = line.toLowerCase();
 		if (option === 'nowarnings' || option === 'notoday') continue;
 		if (/^today\b/i.test(line)) {

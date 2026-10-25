@@ -20,11 +20,13 @@ happens after someday`)).toEqual([
 		]);
 	});
 
-	it('accepts supported options, today overrides, and date filters', () => {
-		expect(getCodeBlockWarnings(`nowarnings
+	it('accepts supported options, today overrides, date filters, and comment lines', () => {
+		expect(getCodeBlockWarnings(`# only show recent anniversaries
+nowarnings
 notoday
 today 2000-10-25
 happens after 2 weeks ago
+# upper boundary
 happens before tomorrow`)).toEqual([]);
 	});
 
@@ -63,6 +65,10 @@ happens before tomorrow`, today).map((item) => item.name)).toEqual(['Recent', 'T
 	it('supports single dates and rejects invalid filter expressions', () => {
 		expect(filterAnniversaries(items, 'happens on today', today).map((item) => item.name)).toEqual(['Today']);
 		expect(filterAnniversaries(items, 'happens after someday', today)).toEqual(items);
+	});
+
+	it('ignores comment lines when filtering anniversaries', () => {
+		expect(filterAnniversaries(items, `# include only today\nhappens on today`, today).map((item) => item.name)).toEqual(['Today']);
 	});
 
 	it('evaluates relative filters from the overridden date', () => {

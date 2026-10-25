@@ -32,7 +32,7 @@ To display the list in a note, add an `anniversaries` code block:
 
 The block lists anniversaries as `YYYY-MM-DD <page title> (<type of anniversary>)`. The list includes a `today` marker with the current date, and known-year anniversaries include an `(X years ago)` suffix. Unparsable entries appear as warnings; add `nowarnings` to suppress them.
 
-Date filters use Tasks-style `happens` lines. For anniversaries from today through the next two weeks:
+Date filters use Tasks-style `happens` lines. Lines beginning with `#` are treated as comments. For anniversaries from today through the next two weeks:
 
 ````markdown
 ```anniversaries
