@@ -1,6 +1,46 @@
 // Tests parsing and validation of anniversary frontmatter values.
 import { describe, expect, it } from 'vitest';
-import { formatAnniversary, formatTodayEntry, hasNowarningsOption, isAnniversaryKey, parseAnniversaryFrontmatter } from './anniversary';
+import { filterAnniversaries, formatAnniversary, formatTodayEntry, hasNowarningsOption, isAnniversaryKey, parseAnniversaryFrontmatter } from './anniversary';
+
+describe('filterAnniversaries', () => {
+	const items = [
+		{ category: 'birthday', name: 'Earlier', date: '2000-10-09', month: 10, day: 9, file: 'Earlier.md' },
+		{ category: 'birthday', name: 'Recent', date: '2000-10-12', month: 10, day: 12, file: 'Recent.md' },
+		{ category: 'birthday', name: 'Today', date: '2000-10-25', month: 10, day: 25, file: 'Today.md' },
+		{ category: 'wedding', name: 'Tomorrow', date: '2020-10-26', month: 10, day: 26, file: 'Tomorrow.md' },
+		{ category: 'birthday', name: 'Two Weeks', date: 'xxxx-11-07', month: 11, day: 7, file: 'Two Weeks.md' },
+		{ category: 'birthday', name: 'Later', date: '2000-11-08', month: 11, day: 8, file: 'Later.md' }
+	];
+	const today = new Date(2026, 9, 25);
+
+	it('keeps all entries when no date filters are specified', () => {
+		expect(filterAnniversaries(items, 'nowarnings', today)).toEqual(items);
+	});
+
+	it('filters upcoming anniversaries with Tasks-style exclusive bounds', () => {
+		expect(filterAnniversaries(items, `happens after yesterday
+happens before in two weeks`, today).map((item) => item.name)).toEqual(['Today', 'Tomorrow', 'Two Weeks']);
+	});
+
+	it('filters anniversaries from two weeks ago through today', () => {
+		expect(filterAnniversaries(items, `happens after 2 weeks ago
+happens before tomorrow`, today).map((item) => item.name)).toEqual(['Recent', 'Today']);
+	});
+
+	it('supports single dates and rejects invalid filter expressions', () => {
+		expect(filterAnniversaries(items, 'happens on today', today).map((item) => item.name)).toEqual(['Today']);
+		expect(filterAnniversaries(items, 'happens after someday', today)).toEqual(items);
+	});
+
+	it('matches dates in a requested range across year boundaries', () => {
+		const winterItems = [
+			{ category: 'birthday', name: 'New Year', date: '2000-01-01', month: 1, day: 1, file: 'New Year.md' },
+			{ category: 'birthday', name: 'Christmas', date: '2000-12-20', month: 12, day: 20, file: 'Christmas.md' }
+		];
+		expect(filterAnniversaries(winterItems, `happens after 2 weeks ago
+happens before tomorrow`, new Date(2026, 0, 3)).map((item) => item.name)).toEqual(['New Year']);
+	});
+});
 
 describe('formatTodayEntry', () => {
 	it('includes the current local date', () => {

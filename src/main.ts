@@ -1,6 +1,6 @@
 // Registers anniversary commands and renders vault-wide anniversary code blocks.
 import { Modal, Plugin } from 'obsidian';
-import { formatAnniversary, formatTodayEntry, hasNowarningsOption, isAnniversaryKey, parseAnniversaryFrontmatter } from './anniversary';
+import { filterAnniversaries, formatAnniversary, formatTodayEntry, hasNowarningsOption, isAnniversaryKey, parseAnniversaryFrontmatter } from './anniversary';
 import type { Anniversary, UnparsableAnniversary } from './anniversary';
 
 function renderAnniversaries(el: HTMLElement, anniversaries: Anniversary[], unparsable: UnparsableAnniversary[], hideWarnings = false) {
@@ -69,7 +69,8 @@ export default class AnniversaryReminderPlugin extends Plugin {
 
 	async onload() {
 		this.registerMarkdownCodeBlockProcessor('anniversaries', async (source, el) => {
-			const { anniversaries, unparsable } = await this.collectAnniversaries();
+			const { anniversaries: allAnniversaries, unparsable } = await this.collectAnniversaries();
+			const anniversaries = filterAnniversaries(allAnniversaries, source);
 			renderAnniversaries(el, anniversaries, unparsable, hasNowarningsOption(source));
 		});
 

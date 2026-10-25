@@ -29,15 +29,39 @@ To display the list in a note, add an `anniversaries` code block:
 ```
 ````
 
-The block lists all anniversaries in the vault as `YYYY-MM-DD <page title> (<type of anniversary>)`, and any unparsable anniversary entries as warnings. Add `nowarnings` inside the block to suppress warnings:
+The block lists anniversaries as `YYYY-MM-DD <page title> (<type of anniversary>)`. The list includes a `today` marker with the current date, and known-year anniversaries include an `(X years ago)` suffix. Unparsable entries appear as warnings; add `nowarnings` to suppress them.
+
+Date filters use Tasks-style `happens` lines. For anniversaries from today through the next two weeks:
 
 ````markdown
 ```anniversaries
+happens after yesterday
+happens before in two weeks
+```
+````
+
+For anniversaries from two weeks ago through today:
+
+````markdown
+```anniversaries
+happens after 2 weeks ago
+happens before tomorrow
+```
+````
+
+The bounds are exclusive, so `after yesterday` and `before tomorrow` include today; an anniversary exactly on the `2 weeks ago` boundary is excluded. `happens` filters may also use `on`, `on or after`, and `on or before` with relative dates (`today`, `tomorrow`, `2 weeks ago`, `in 3 days`) or a date such as `2026-10-25`.
+
+Add `nowarnings` alongside the filters to hide warnings:
+
+````markdown
+```anniversaries
+happens after 2 weeks ago
+happens before tomorrow
 nowarnings
 ```
 ````
 
-You can also open the Command Palette (**Ctrl+P** on Windows/Linux, **Cmd+P** on macOS) and run **Check anniversaries** to see the list with warnings. The plugin currently lists all anniversaries; it does not calculate upcoming or recently passed occurrences.
+You can also open the Command Palette (**Ctrl+P** on Windows/Linux, **Cmd+P** on macOS) and run **Check anniversaries** to see the full list with warnings.
 
 ## Why is this plugin needed?
 
