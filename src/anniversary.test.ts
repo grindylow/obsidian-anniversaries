@@ -1,39 +1,42 @@
 // Tests parsing and validation of anniversary frontmatter values.
 import { describe, expect, it } from 'vitest';
-import { filterAnniversaries, formatAnniversary, formatTodayEntry, getCodeBlockWarnings, getTodayOverride, hasNotodayOption, hasNowarningsOption, isAnniversaryKey, parseAnniversaryFrontmatter } from './anniversary';
+import { filterAnniversaries, formatAnniversary, formatTodayEntry, isAnniversaryKey, parseAnniversaryFrontmatter, parseCodeBlockOptions } from './anniversary';
 
-describe('getTodayOverride', () => {
-	it('parses a valid override and falls back for invalid or repeated values', () => {
-		const fallback = new Date(2026, 9, 25);
-		expect(getTodayOverride('today 2000-10-25', fallback)).toEqual(new Date(2000, 9, 25));
-		expect(getTodayOverride('today 2000-02-30', fallback)).toBe(fallback);
-		expect(getTodayOverride('today 2000-10-25\ntoday 2001-10-25', fallback)).toBe(fallback);
+describe('parseCodeBlockOptions', () => {
+	it('parses supported options, filters, comments, and today overrides', () => {
+		const options = parseCodeBlockOptions(`# only recent entries
+nowarnings
+notoday
+today 2000-10-25
+happens after 2 weeks ago
+# upper bound
+happens before tomorrow`, new Date(2026, 9, 25));
+		expect(options).toMatchObject({ hideWarnings: true, hideToday: true, todayOverridden: true, warnings: [] });
+		expect(options.today).toEqual(new Date(2000, 9, 25));
+		expect(options.filters).toHaveLength(2);
 	});
-});
 
-describe('getCodeBlockWarnings', () => {
 	it('warns on unknown options and malformed happens filters', () => {
-		expect(getCodeBlockWarnings(`nowranings
-happens after someday`)).toEqual([
+		expect(parseCodeBlockOptions(`nowranings
+happens after someday`).warnings).toEqual([
 			'Unknown option: nowranings',
 			'Invalid happens filter: happens after someday'
 		]);
 	});
 
-	it('accepts supported options, today overrides, date filters, and comment lines', () => {
-		expect(getCodeBlockWarnings(`# only show recent anniversaries
-nowarnings
-notoday
-today 2000-10-25
-happens after 2 weeks ago
-# upper boundary
-happens before tomorrow`)).toEqual([]);
-	});
-
 	it('warns when a today override is malformed or repeated', () => {
-		expect(getCodeBlockWarnings(`today someday`)).toContain('Invalid today override: today someday');
-		expect(getCodeBlockWarnings(`today 2000-10-25
-today 2001-10-25`)).toContain('Only one today override may be specified.');
+		expect(parseCodeBlockOptions(`today someday`).warnings).toContain('Invalid today override: today someday');
+		expect(parseCodeBlockOptions(`today 2000-10-25
+today 2001-10-25`).warnings).toEqual(['Only one today override may be specified.']);
+	});
+});
+
+describe('parseAnniversaryFrontmatter', () => {
+	it('accepts valid anniversary years below 0100 and absolute filter dates', () => {
+		const dateSource = 'happens on 0001-01-01';
+		const entry = parseAnniversaryFrontmatter('anniversary', '0001-01-01', 'Early.md', 'Early');
+		expect(entry).not.toBeNull();
+		expect(filterAnniversaries([entry!], parseCodeBlockOptions(dateSource, new Date(2026, 0, 1)))).toHaveLength(1);
 	});
 });
 
@@ -47,35 +50,40 @@ describe('filterAnniversaries', () => {
 		{ category: 'birthday', name: 'Later', date: '2000-11-08', month: 11, day: 8, file: 'Later.md' }
 	];
 	const today = new Date(2026, 9, 25);
+	const filter = (source: string, referenceDate = today) => filterAnniversaries(items, parseCodeBlockOptions(source, referenceDate));
 
 	it('keeps all entries when no date filters are specified', () => {
-		expect(filterAnniversaries(items, 'nowarnings', today)).toEqual(items);
+		expect(filter('nowarnings')).toEqual(items);
 	});
 
 	it('filters upcoming anniversaries with Tasks-style exclusive bounds', () => {
-		expect(filterAnniversaries(items, `happens after yesterday
-happens before in two weeks`, today).map((item) => item.name)).toEqual(['Today', 'Tomorrow', 'Two Weeks']);
+		expect(filter(`happens after yesterday
+happens before in two weeks`).map((item) => item.name)).toEqual(['Today', 'Tomorrow', 'Two Weeks']);
 	});
 
 	it('filters anniversaries from two weeks ago through today', () => {
-		expect(filterAnniversaries(items, `happens after 2 weeks ago
-happens before tomorrow`, today).map((item) => item.name)).toEqual(['Recent', 'Today']);
+		expect(filter(`happens after 2 weeks ago
+happens before tomorrow`).map((item) => item.name)).toEqual(['Recent', 'Today']);
 	});
 
-	it('supports single dates and rejects invalid filter expressions', () => {
-		expect(filterAnniversaries(items, 'happens on today', today).map((item) => item.name)).toEqual(['Today']);
-		expect(filterAnniversaries(items, 'happens after someday', today)).toEqual(items);
+	it('supports single dates and ignores invalid filter expressions', () => {
+		expect(filter('happens on today').map((item) => item.name)).toEqual(['Today']);
+		expect(filter('happens after someday')).toEqual(items);
 	});
 
 	it('ignores comment lines when filtering anniversaries', () => {
-		expect(filterAnniversaries(items, `# include only today\nhappens on today`, today).map((item) => item.name)).toEqual(['Today']);
+		expect(filter(`# include only today
+happens on today`).map((item) => item.name)).toEqual(['Today']);
 	});
 
 	it('evaluates relative filters from the overridden date', () => {
 		const override = 'today 2026-11-01';
-		expect(filterAnniversaries(items, `${override}\nhappens on today`, today).map((item) => item.name)).toEqual([]);
-		expect(filterAnniversaries(items, `${override}\nhappens on or after in 5 days\nhappens before in 7 days`, today).map((item) => item.name)).toEqual(['Two Weeks']);
-		expect(formatAnniversary(items[2]!, getTodayOverride(override, today))).toContain('(26 years ago)');
+		expect(filter(`${override}
+happens on today`).map((item) => item.name)).toEqual([]);
+		expect(filter(`${override}
+happens on or after in 5 days
+happens before in 7 days`).map((item) => item.name)).toEqual(['Two Weeks']);
+		expect(formatAnniversary(items[2]!, parseCodeBlockOptions(override, today).today)).toContain('(26 years ago)');
 	});
 
 	it('matches dates in a requested range across year boundaries', () => {
@@ -83,8 +91,8 @@ happens before tomorrow`, today).map((item) => item.name)).toEqual(['Recent', 'T
 			{ category: 'birthday', name: 'New Year', date: '2000-01-01', month: 1, day: 1, file: 'New Year.md' },
 			{ category: 'birthday', name: 'Christmas', date: '2000-12-20', month: 12, day: 20, file: 'Christmas.md' }
 		];
-		expect(filterAnniversaries(winterItems, `happens after 2 weeks ago
-happens before tomorrow`, new Date(2026, 0, 3)).map((item) => item.name)).toEqual(['New Year']);
+		expect(filterAnniversaries(winterItems, parseCodeBlockOptions(`happens after 2 weeks ago
+happens before tomorrow`, new Date(2026, 0, 3))).map((item) => item.name)).toEqual(['New Year']);
 	});
 });
 
@@ -112,13 +120,15 @@ describe('formatAnniversary', () => {
 	});
 });
 
-describe('hasNowarningsOption', () => {
-	it.each(['nowarnings', 'nowarnings sort=date', 'NOWARNINGS'])('recognizes %s', (source) => {
-		expect(hasNowarningsOption(source)).toBe(true);
+describe('parseCodeBlockOptions warning visibility', () => {
+	it('hides unparsable-entry warnings but leaves syntax warnings visible', () => {
+		const options = parseCodeBlockOptions('nowarnings\nnowranings');
+		expect(options.hideWarnings).toBe(true);
+		expect(options.warnings).toEqual(['Unknown option: nowranings']);
 	});
 
-	it.each(['', 'warnings', 'no-warnings'])('does not recognize %s', (source) => {
-		expect(hasNowarningsOption(source)).toBe(false);
+	it('detects notoday even when it appears in a comment, preserving existing behavior', () => {
+		expect(parseCodeBlockOptions('# notoday').hideToday).toBe(true);
 	});
 });
 

@@ -1,17 +1,17 @@
 // Registers anniversary commands and renders vault-wide anniversary code blocks.
 import { Plugin } from 'obsidian';
-import { filterAnniversaries, formatAnniversary, formatTodayEntry, getCodeBlockWarnings, getTodayOverride, hasNotodayOption, hasNowarningsOption, isAnniversaryKey, parseAnniversaryFrontmatter } from './anniversary';
+import { filterAnniversaries, formatAnniversary, formatTodayEntry, isAnniversaryKey, parseAnniversaryFrontmatter, parseCodeBlockOptions } from './anniversary';
 import type { Anniversary, UnparsableAnniversary } from './anniversary';
 
-function renderAnniversaries(el: HTMLElement, anniversaries: Anniversary[], unparsable: UnparsableAnniversary[], hideWarnings = false, hideToday = false, codeWarnings: string[] = [], today = new Date(), todayOverridden = false) {
+function renderAnniversaries(el: HTMLElement, anniversaries: Anniversary[], unparsable: UnparsableAnniversary[], options: ReturnType<typeof parseCodeBlockOptions>) {
 	const list = el.createEl('ul');
-	const todayMonth = today.getMonth() + 1;
-	const todayDay = today.getDate();
-	let todayInserted = hideToday;
+	const todayMonth = options.today.getMonth() + 1;
+	const todayDay = options.today.getDate();
+	let todayInserted = options.hideToday;
 	const insertToday = () => {
-		if (hideToday) return;
+		if (options.hideToday) return;
 		const item = list.createEl('li');
-		item.setText(formatTodayEntry(today, todayOverridden));
+		item.setText(formatTodayEntry(options.today, options.todayOverridden));
 		todayInserted = true;
 	};
 
@@ -24,18 +24,18 @@ function renderAnniversaries(el: HTMLElement, anniversaries: Anniversary[], unpa
 				insertToday();
 			}
 			const item = list.createEl('li');
-			item.setText(formatAnniversary(anniversary, today));
+			item.setText(formatAnniversary(anniversary, options.today));
 		}
 		if (!todayInserted) insertToday();
 	}
 
-	const warningCount = (hideWarnings ? 0 : unparsable.length) + codeWarnings.length;
+	const warningCount = (options.hideWarnings ? 0 : unparsable.length) + options.warnings.length;
 	if (warningCount > 0) {
 		const warningDetails = el.createEl('details');
 		const summary = warningDetails.createEl('summary');
 		summary.setText(`⚠ ${warningCount} warning${warningCount === 1 ? '' : 's'}`);
 		const warningList = warningDetails.createEl('ul');
-		if (!hideWarnings) {
+		if (!options.hideWarnings) {
 			for (const entry of unparsable) {
 				const item = warningList.createEl('li');
 				const fileName = entry.file.split('/').pop() ?? entry.file;
@@ -45,7 +45,7 @@ function renderAnniversaries(el: HTMLElement, anniversaries: Anniversary[], unpa
 				item.createEl('span', { text: `: ${JSON.stringify(entry.value)}` });
 			}
 		}
-		for (const warning of codeWarnings) warningList.createEl('li', { text: warning });
+		for (const warning of options.warnings) warningList.createEl('li', { text: warning });
 		const help = warningDetails.createEl('p');
 		help.appendText('To resolve these issues, please see the ');
 		help.createEl('a', { text: 'plugin GitHub repository', href: 'https://github.com/grindylow/obsidian-anniversaries' });
@@ -54,7 +54,7 @@ function renderAnniversaries(el: HTMLElement, anniversaries: Anniversary[], unpa
 }
 
 export default class AnniversaryReminderPlugin extends Plugin {
-	private async collectAnniversaries() {
+	private collectAnniversaries() {
 		const anniversaries: Anniversary[] = [];
 		const unparsable: UnparsableAnniversary[] = [];
 		for (const file of this.app.vault.getMarkdownFiles()) {
@@ -73,15 +73,12 @@ export default class AnniversaryReminderPlugin extends Plugin {
 		return { anniversaries, unparsable };
 	}
 
-	async onload() {
-		this.registerMarkdownCodeBlockProcessor('anniversaries', async (source, el) => {
-			const { anniversaries: allAnniversaries, unparsable } = await this.collectAnniversaries();
-			const codeWarnings = getCodeBlockWarnings(source);
-			const today = getTodayOverride(source);
-			const todayOverridden = source.split(/\r?\n/).filter((line) => /^today\b/i.test(line.trim())).length === 1 && !codeWarnings.some((warning) => warning.startsWith('Invalid today override:'));
-			const anniversaries = filterAnniversaries(allAnniversaries, source, today);
-			renderAnniversaries(el, anniversaries, unparsable, hasNowarningsOption(source), hasNotodayOption(source), codeWarnings, today, todayOverridden);
+	onload() {
+		this.registerMarkdownCodeBlockProcessor('anniversaries', (source, el) => {
+			const { anniversaries: allAnniversaries, unparsable } = this.collectAnniversaries();
+			const options = parseCodeBlockOptions(source);
+			const anniversaries = filterAnniversaries(allAnniversaries, options);
+			renderAnniversaries(el, anniversaries, unparsable, options);
 		});
-
 	}
 }

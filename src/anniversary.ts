@@ -14,23 +14,24 @@ export interface UnparsableAnniversary {
 	file: string;
 }
 
-interface DateFilter {
+export interface DateFilter {
 	operator: 'after' | 'before' | 'on' | 'on or after' | 'on or before';
 	date: Date;
+}
+
+export interface AnniversaryCodeBlockOptions {
+	filters: DateFilter[];
+	hideWarnings: boolean;
+	hideToday: boolean;
+	today: Date;
+	todayOverridden: boolean;
+	warnings: string[];
 }
 
 const dateValue = /^(\d{4}|\?{4}|x{4}|y{4})-(\d{1,2})-(\d{1,2})/i;
 
 export function isAnniversaryKey(key: string): boolean {
 	return /^anniversary(?:-|$)/i.test(key);
-}
-
-export function hasNowarningsOption(source: string): boolean {
-	return source.split(/\s+/).some((option) => option.toLowerCase() === 'nowarnings');
-}
-
-export function hasNotodayOption(source: string): boolean {
-	return source.split(/\s+/).some((option) => option.toLowerCase() === 'notoday');
 }
 
 function getAnniversaryYear(anniversary: Anniversary): number | null {
@@ -56,34 +57,29 @@ export function formatTodayEntry(today = new Date(), overridden = false): string
 	return `${year}-${month}-${day} today${overridden ? ' (overridden)' : ''}`;
 }
 
-function parseIsoDate(value: string): Date | null {
-	const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-	if (!match?.[1] || !match[2] || !match[3]) return null;
-	const year = Number(match[1]);
-	const month = Number(match[2]);
-	const day = Number(match[3]);
+function createUTCDate(year: number, month: number, day: number): Date | null {
 	const date = new Date(0);
 	date.setUTCFullYear(year, month - 1, day);
 	date.setUTCHours(0, 0, 0, 0);
-	if (date.getUTCFullYear() !== year || date.getUTCMonth() !== month - 1 || date.getUTCDate() !== day) return null;
-	return date;
+	return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day ? date : null;
 }
 
-export function getTodayOverride(source: string, fallback = new Date()): Date {
-	const lines = source.split(/\r?\n/).filter((entry) => /^today\b/i.test(entry.trim()));
-	if (lines.length !== 1) return fallback;
-	const value = lines[0]?.trim().replace(/^today\s+/i, '');
-	if (!value) return fallback;
-	const parsed = parseIsoDate(value);
-	if (!parsed) return fallback;
-	const localDate = new Date(0);
-	localDate.setFullYear(parsed.getUTCFullYear(), parsed.getUTCMonth(), parsed.getUTCDate());
-	localDate.setHours(0, 0, 0, 0);
-	return localDate;
+function parseIsoDate(value: string): Date | null {
+	const match = value.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+	if (!match?.[1] || !match[2] || !match[3]) return null;
+	return createUTCDate(Number(match[1]), Number(match[2]), Number(match[3]));
+}
+
+function localDate(date: Date): Date {
+	const local = new Date(0);
+	local.setFullYear(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate());
+	local.setHours(0, 0, 0, 0);
+	return local;
 }
 
 function parseQueryDate(value: string, today: Date): Date | null {
-	const normalizedToday = new Date(Date.UTC(today.getFullYear(), today.getMonth(), today.getDate()));
+	const normalizedToday = createUTCDate(today.getFullYear(), today.getMonth() + 1, today.getDate());
+	if (!normalizedToday) return null;
 	const relativeMatch = value.toLowerCase().match(/^(?:(in)\s+)?(\d+|one|two)\s+(day|days|week|weeks)(?:\s+ago)?$/);
 	if (relativeMatch) {
 		const amountText = relativeMatch[2];
@@ -104,8 +100,7 @@ function parseQueryDate(value: string, today: Date): Date | null {
 	}
 	const absoluteMatch = value.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
 	if (absoluteMatch?.[1] && absoluteMatch[2] && absoluteMatch[3]) {
-		const date = new Date(Date.UTC(Number(absoluteMatch[1]), Number(absoluteMatch[2]) - 1, Number(absoluteMatch[3])));
-		if (date.getUTCFullYear() === Number(absoluteMatch[1]) && date.getUTCMonth() === Number(absoluteMatch[2]) - 1 && date.getUTCDate() === Number(absoluteMatch[3])) return date;
+		return createUTCDate(Number(absoluteMatch[1]), Number(absoluteMatch[2]), Number(absoluteMatch[3]));
 	}
 	return null;
 }
@@ -117,35 +112,44 @@ function parseDateFilter(line: string, today: Date): DateFilter | null {
 	return date ? { operator: match[1].toLowerCase() as DateFilter['operator'], date } : null;
 }
 
-function parseDateFilters(source: string, today: Date): DateFilter[] {
-	return source.split(/\r?\n/).flatMap((line) => {
-		const filter = parseDateFilter(line, today);
-		return filter ? [filter] : [];
-	});
-}
-
-export function getCodeBlockWarnings(source: string, today = new Date()): string[] {
+export function parseCodeBlockOptions(source: string, fallbackToday = new Date()): AnniversaryCodeBlockOptions {
+	const lines = source.split(/\r?\n/).map((line) => line.trim()).filter((line) => line && !line.startsWith('#'));
+	const words = source.toLowerCase().split(/\s+/);
 	const warnings: string[] = [];
-	const todayLines = source.split(/\r?\n/).filter((line) => /^today\b/i.test(line.trim()));
+	const todayLines = lines.filter((line) => /^today\b/i.test(line));
 	if (todayLines.length > 1) warnings.push('Only one today override may be specified.');
-	for (const rawLine of source.split(/\r?\n/)) {
-		const line = rawLine.trim();
-		if (!line || line.startsWith('#')) continue;
-		const option = line.toLowerCase();
-		if (option === 'nowarnings' || option === 'notoday') continue;
-		if (/^today\b/i.test(line)) {
-			if (!/^today\s+\d{4}-\d{2}-\d{2}$/i.test(line) || !parseIsoDate(line.replace(/^today\s+/i, ''))) {
-				warnings.push(`Invalid today override: ${line}`);
-			}
-			continue;
+
+	const overrideValue = todayLines.length === 1 ? todayLines[0]?.replace(/^today\s+/i, '') : undefined;
+	const override = overrideValue ? parseIsoDate(overrideValue) : null;
+	if (todayLines.length === 1 && !override) warnings.push(`Invalid today override: ${todayLines[0]}`);
+	if (todayLines.length > 1) {
+		for (const line of todayLines) {
+			if (!parseIsoDate(line.replace(/^today\s+/i, ''))) warnings.push(`Invalid today override: ${line}`);
 		}
+	}
+	const today = override ? localDate(override) : fallbackToday;
+	const filters: DateFilter[] = [];
+
+	for (const line of lines) {
+		const option = line.toLowerCase();
+		if (option === 'nowarnings' || option === 'notoday' || /^today\b/i.test(line)) continue;
 		if (/^happens\b/i.test(line)) {
-			if (!parseDateFilter(line, today)) warnings.push(`Invalid happens filter: ${line}`);
+			const filter = parseDateFilter(line, today);
+			if (filter) filters.push(filter);
+			else warnings.push(`Invalid happens filter: ${line}`);
 			continue;
 		}
 		warnings.push(`Unknown option: ${line}`);
 	}
-	return warnings;
+
+	return {
+		filters,
+		hideWarnings: words.includes('nowarnings'),
+		hideToday: words.includes('notoday'),
+		today,
+		todayOverridden: Boolean(override),
+		warnings
+	};
 }
 
 function matchesDateFilters(date: Date, filters: DateFilter[]): boolean {
@@ -169,19 +173,17 @@ function dateOfAnniversaryInRange(anniversary: Anniversary, filters: DateFilter[
 	const lastYear = filterYears.length ? Math.max(...filterYears) + 1 : today.getFullYear() + 1;
 
 	for (let year = firstYear; year <= lastYear; year++) {
-		const occurrence = new Date(Date.UTC(year, anniversary.month - 1, anniversary.day));
-		if (occurrence.getUTCMonth() !== anniversary.month - 1 || occurrence.getUTCDate() !== anniversary.day) continue;
+		const occurrence = createUTCDate(year, anniversary.month, anniversary.day);
+		if (!occurrence) continue;
 		if (anniversaryYear !== null && year < anniversaryYear) continue;
 		if (matchesDateFilters(occurrence, filters)) return occurrence;
 	}
 	return null;
 }
 
-export function filterAnniversaries(anniversaries: Anniversary[], source: string, today = new Date()): Anniversary[] {
-	const referenceDate = getTodayOverride(source, today);
-	const filters = parseDateFilters(source, referenceDate);
-	if (filters.length === 0) return anniversaries;
-	return anniversaries.filter((anniversary) => dateOfAnniversaryInRange(anniversary, filters, today) !== null);
+export function filterAnniversaries(anniversaries: Anniversary[], options: AnniversaryCodeBlockOptions): Anniversary[] {
+	if (options.filters.length === 0) return anniversaries;
+	return anniversaries.filter((anniversary) => dateOfAnniversaryInRange(anniversary, options.filters, options.today) !== null);
 }
 
 export function parseAnniversaryFrontmatter(key: string, value: unknown, file: string, pageTitle: string): Anniversary | null {
@@ -207,8 +209,7 @@ export function parseAnniversaryFrontmatter(key: string, value: unknown, file: s
 	const month = Number(monthPart);
 	const day = Number(dayPart);
 	const validationYear = yearPart === '0000' || !/^\d{4}$/.test(yearPart) ? 2000 : Number(yearPart);
-	const parsedDate = new Date(Date.UTC(validationYear, month - 1, day));
-	if (parsedDate.getUTCFullYear() !== validationYear || parsedDate.getUTCMonth() !== month - 1 || parsedDate.getUTCDate() !== day) return null;
+	if (!createUTCDate(validationYear, month, day)) return null;
 
 	const category = trailingText || keyMatch[1]?.toLowerCase() || '';
 	return { category, name: pageTitle, date, month, day, file };
