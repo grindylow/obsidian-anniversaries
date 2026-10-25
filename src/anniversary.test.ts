@@ -1,6 +1,16 @@
 // Tests parsing and validation of anniversary frontmatter values.
 import { describe, expect, it } from 'vitest';
-import { parseAnniversaryFrontmatter } from './anniversary';
+import { isAnniversaryKey, parseAnniversaryFrontmatter } from './anniversary';
+
+describe('isAnniversaryKey', () => {
+	it.each(['anniversary', 'anniversary-death', 'Anniversary-notes'])('recognizes %s', (key) => {
+		expect(isAnniversaryKey(key)).toBe(true);
+	});
+
+	it.each(['anniversary_', 'my-anniversary', 'anniversaries', 'notes'])('ignores %s', (key) => {
+		expect(isAnniversaryKey(key)).toBe(false);
+	});
+});
 
 describe('parseAnniversaryFrontmatter', () => {
 	it.each([

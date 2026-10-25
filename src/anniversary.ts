@@ -10,6 +10,16 @@ export interface Anniversary {
 
 const dateValue = /^(\d{4}|\?{4}|x{4})-(\d{2})-(\d{2})$/i;
 
+export interface UnparsableAnniversary {
+	key: string;
+	value: unknown;
+	file: string;
+}
+
+export function isAnniversaryKey(key: string): boolean {
+	return /^anniversary(?:-|$)/i.test(key);
+}
+
 export function parseAnniversaryFrontmatter(key: string, value: unknown, file: string, pageTitle: string): Anniversary | null {
 	const keyMatch = key.match(/^anniversary(?:-([a-z][a-z0-9-]*))?$/i);
 	if (!keyMatch || typeof value !== 'string') return null;
