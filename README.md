@@ -72,6 +72,13 @@ nowarnings
 ```
 ````
 
+## Versioning and release builds
+
+The root `manifest.json` is the source of truth for the release version. Set its version to the release version, then create a Git tag with the exact same value (for example, `0.5.0`, without a `v` prefix). All build output is written under ignored `dist/` and excluded from Git.
+
+For local development, run `npm run build`; copy `dist/main.js` and the root `manifest.json` into your test vault's plugin folder. For a tagged local release build, tag a clean commit whose manifest version matches the tag and run `npm run release:prepare`. This generates `dist/release/` containing `main.js`, `manifest.json`, `package.json`, and `package-lock.json`; the script refuses to package if the tag and manifest versions differ.
+
+To automate a release, run **Actions → Release → Run workflow** on the branch to release. The workflow verifies the tag against `manifest.json`, runs tests, builds the package, and creates a GitHub release with the plugin files and installable zip attached. When using a non-`main` branch, both **draft** and **prerelease** must be enabled.
 ## Why is this plugin needed?
 
 - Plugins such as TASKS require full date specifications (including year). Also, although you can define "recurring" tasks, tasks for future occurrences are only generated once the current occurrence has been checked off.

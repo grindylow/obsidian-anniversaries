@@ -1,6 +1,6 @@
 {
 	"name": "anniversary-reminder",
-	"version": "0.6.0",
+	"version": "0.0.0-dev",
 	"description": "An Obsidian plugin for anniversary reminders.",
 	"main": "main.js",
 	"type": "module",

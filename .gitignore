@@ -1,4 +1,5 @@
 node_modules/
+/dist/
 
 # Ignore the local Obsidian test vault.
 /testvault/
