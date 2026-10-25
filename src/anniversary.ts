@@ -40,7 +40,7 @@ function getAnniversaryYear(anniversary: Anniversary): number | null {
 }
 
 export function formatAnniversary(anniversary: Anniversary, today = new Date()): string {
-	const date = `${anniversary.date} ${anniversary.name} (${anniversary.category})`;
+	const date = `${anniversary.date} ${anniversary.name}${anniversary.category ? ` (${anniversary.category})` : ''}`;
 	const year = getAnniversaryYear(anniversary);
 	if (year === null) return date;
 
@@ -210,6 +210,6 @@ export function parseAnniversaryFrontmatter(key: string, value: unknown, file: s
 	const parsedDate = new Date(Date.UTC(validationYear, month - 1, day));
 	if (parsedDate.getUTCFullYear() !== validationYear || parsedDate.getUTCMonth() !== month - 1 || parsedDate.getUTCDate() !== day) return null;
 
-	const category = trailingText || keyMatch[1]?.toLowerCase() || 'birthday';
+	const category = trailingText || keyMatch[1]?.toLowerCase() || '';
 	return { category, name: pageTitle, date, month, day, file };
 }

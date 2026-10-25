@@ -98,17 +98,17 @@ describe('formatTodayEntry', () => {
 describe('formatAnniversary', () => {
 	it('adds the number of years since a known-year anniversary', () => {
 		expect(formatAnniversary({
-			category: 'birthday', name: 'Ada Lovelace', date: '1815-12-10', month: 12, day: 10, file: 'Ada.md'
-		}, new Date(2026, 9, 25))).toBe('1815-12-10 Ada Lovelace (birthday) (211 years ago)');
+			category: '', name: 'Ada Lovelace', date: '1815-12-10', month: 12, day: 10, file: 'Ada.md'
+		}, new Date(2026, 9, 25))).toBe('1815-12-10 Ada Lovelace (211 years ago)');
 	});
 
 	it('does not add years ago for unknown years', () => {
 		expect(formatAnniversary({
-			category: 'birthday', name: 'Ada Lovelace', date: 'xxxx-12-10', month: 12, day: 10, file: 'Ada.md'
-		}, new Date(2026, 9, 25))).toBe('xxxx-12-10 Ada Lovelace (birthday)');
+			category: '', name: 'Ada Lovelace', date: 'xxxx-12-10', month: 12, day: 10, file: 'Ada.md'
+		}, new Date(2026, 9, 25))).toBe('xxxx-12-10 Ada Lovelace');
 		expect(formatAnniversary({
-			category: 'birthday', name: 'Ada Lovelace', date: 'yyyy-12-10', month: 12, day: 10, file: 'Ada.md'
-		}, new Date(2026, 9, 25))).toBe('yyyy-12-10 Ada Lovelace (birthday)');
+			category: '', name: 'Ada Lovelace', date: 'yyyy-12-10', month: 12, day: 10, file: 'Ada.md'
+		}, new Date(2026, 9, 25))).toBe('yyyy-12-10 Ada Lovelace');
 	});
 });
 
@@ -134,15 +134,16 @@ describe('isAnniversaryKey', () => {
 
 describe('parseAnniversaryFrontmatter', () => {
 	it.each([
-		['anniversary', 'xxxx-02-28', 'birthday', 'xxxx-02-28'],
-		['anniversary', 'yyyy-02-28', 'birthday', 'yyyy-02-28'],
-		['anniversary', '????-02-28', 'birthday', '????-02-28'],
-		['anniversary', '0000-02-29', 'birthday', '0000-02-29'],
-		['anniversary', '2024-02-29', 'birthday', '2024-02-29'],
-		['anniversary', '1815-12-10', 'birthday', '1815-12-10'],
-		['anniversary', '1815-2-3', 'birthday', '1815-02-03'],
-		['anniversary', '1815-02-3', 'birthday', '1815-02-03'],
-		['anniversary', '1815-2-03', 'birthday', '1815-02-03'],
+		['anniversary', 'xxxx-02-28', '', 'xxxx-02-28'],
+		['anniversary', 'yyyy-02-28', '', 'yyyy-02-28'],
+		['anniversary', '????-02-28', '', '????-02-28'],
+		['anniversary', '0000-02-29', '', '0000-02-29'],
+		['anniversary', '2024-02-29', '', '2024-02-29'],
+		['anniversary', '1815-12-10', '', '1815-12-10'],
+		['anniversary', '1815-2-3', '', '1815-02-03'],
+		['anniversary', '1815-02-3', '', '1815-02-03'],
+		['anniversary', '1815-2-03', '', '1815-02-03'],
+		['anniversary-birthday', '1815-12-10', 'birthday', '1815-12-10'],
 		['anniversary-death', '1852-11-27', 'death', '1852-11-27'],
 		['ANNIVERSARY-WEDDING', '2001-06-15', 'wedding', '2001-06-15'],
 		['anniversary---', '2020-12-12', '--', '2020-12-12'],
