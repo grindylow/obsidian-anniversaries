@@ -24,6 +24,7 @@ describe('parseAnniversaryFrontmatter', () => {
 		['anniversary', '1815-2-03', 'birthday'],
 		['anniversary-death', '1852-11-27', 'death'],
 		['ANNIVERSARY-WEDDING', '2001-06-15', 'wedding'],
+		['anniversary---', '2020-12-12', '--'],
 		['anniversary-c', '0000-10-12 (Wedding)', 'Wedding'],
 		['anniversary-c', '0000-10-12 Wedding', 'Wedding'],
 		['anniversary-c', '0000-10-12 · Wedding anniversary', '· Wedding anniversary'],

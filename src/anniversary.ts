@@ -21,7 +21,7 @@ export function isAnniversaryKey(key: string): boolean {
 }
 
 export function parseAnniversaryFrontmatter(key: string, value: unknown, file: string, pageTitle: string): Anniversary | null {
-	const keyMatch = key.match(/^anniversary(?:-([a-z][a-z0-9-]*))?$/i);
+	const keyMatch = key.match(/^anniversary(?:-([a-z0-9-]+))?$/i);
 	if (!keyMatch || typeof value !== 'string') return null;
 
 	const rawValue = value.trim();
