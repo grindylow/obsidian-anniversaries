@@ -40,15 +40,15 @@ function renderAnniversaries(el: HTMLElement, anniversaries: Anniversary[], unpa
 				const item = warningList.createEl('li');
 				const fileName = entry.file.split('/').pop() ?? entry.file;
 				item.createEl('code', { text: fileName });
-				item.createEl('span', { text: ': ' });
+				item.createSpan({ text: ': ' });
 				item.createEl('code', { text: entry.key });
-				item.createEl('span', { text: `: ${JSON.stringify(entry.value)}` });
+				item.createSpan({ text: `: ${JSON.stringify(entry.value)}` });
 			}
 		}
 		for (const warning of options.warnings) warningList.createEl('li', { text: warning });
 		const help = warningDetails.createEl('p');
 		help.appendText('To resolve these issues, please see the ');
-		help.createEl('a', { text: 'plugin GitHub repository', href: 'https://github.com/grindylow/obsidian-anniversaries' });
+		help.createEl('a', { text: 'Plugin GitHub repository', href: 'https://github.com/grindylow/obsidian-anniversaries' });
 		help.appendText(' for help.');
 	}
 }

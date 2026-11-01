@@ -1,0 +1,15 @@
+// Syncs npm version bumps into the Obsidian manifest and compatibility map.
+import { readFileSync, writeFileSync } from 'node:fs';
+
+const targetVersion = process.env.npm_package_version;
+if (!targetVersion) throw new Error('npm_package_version is not set.');
+
+const manifest = JSON.parse(readFileSync('manifest.json', 'utf8'));
+manifest.version = targetVersion;
+writeFileSync('manifest.json', `${JSON.stringify(manifest, null, '\t')}\n`);
+
+const versions = JSON.parse(readFileSync('versions.json', 'utf8'));
+if (!(targetVersion in versions)) {
+	versions[targetVersion] = manifest.minAppVersion;
+	writeFileSync('versions.json', `${JSON.stringify(versions, null, '\t')}\n`);
+}
