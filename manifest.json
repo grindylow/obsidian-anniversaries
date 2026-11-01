@@ -4,6 +4,6 @@
 	"version": "0.6.0",
 	"minAppVersion": "1.0.0",
 	"description": "Reminds you of anniversaries recorded in your vault.",
-	"author": "",
+	"author": "Martin Grill",
 	"isDesktopOnly": false
 }
