@@ -9,7 +9,7 @@ This lightweight plugin finds anniversary entries in your Obsidian vault and dis
 - View all found anniversaries, sorted by month and day.
 - TASKS-like syntax for limiting list of anniversaries to those that will take place in a specified timeframe (for example "happens before in 2 weeks")
 
-## Instructions
+## How to use
 
 Add an `anniversary` property to the YAML frontmatter of a Markdown page. The value must be a quoted date in `YYYY-M-D` format (month and day may each use one or two digits); the year may instead be `????`, `0000`, `xxxx`, or `yyyy`. Add further entries using `anniversary-<category>` keys, where `<category>` is a non-empty name made of letters, numbers, or hyphens.
 
@@ -30,9 +30,13 @@ To display the list in a note, add an `anniversaries` code block:
 ```
 ````
 
-The block lists anniversaries as `YYYY-MM-DD <page title> (<type of anniversary>)`. The list includes a `today` marker with the current date, and known-year anniversaries include an `(X years ago)` suffix. Unparsable entries appear as warnings; add `nowarnings` to suppress unparsable-entry warnings. Syntax warnings for unknown options and malformed filters remain visible.
+By default, the list will include a `today` marker with the current date - use the `notoday` option to suppress this entry.
 
-Date filters use Tasks-style `happens` lines. Lines beginning with `#` are treated as comments. For anniversaries from today through the next two weeks:
+Anniversaries with known year will include an `(X years ago)` suffix.
+
+Any unparsable entries appear as warnings; add `nowarnings` to suppress them.
+
+Date filters use Tasks-style `happens` lines. For anniversaries from today through the next two weeks:
 
 ````markdown
 ```anniversaries
@@ -50,7 +54,7 @@ happens before tomorrow
 ```
 ````
 
-The bounds are exclusive, so `after yesterday` and `before tomorrow` include today; an anniversary exactly on the `2 weeks ago` boundary is excluded. Unknown code-block options and malformed filters are listed as collapsed warnings. Use `notoday` to omit the dated `today` marker. `happens` filters may also use `on`, `on or after`, and `on or before` with relative dates (`today`, `tomorrow`, `2 weeks ago`, `in 3 days`) or a date such as `2026-10-25`.
+The bounds are exclusive, so `after yesterday` and `before tomorrow` include today; an anniversary exactly on the `2 weeks ago` boundary is excluded. Unknown code-block options and malformed filters are listed as collapsed warnings. `happens` filters may also use `on`, `on or after`, and `on or before` with relative dates (`today`, `tomorrow`, `2 weeks ago`, `in 3 days`) or a date such as `2026-10-25`.
 
 Override the reference date by adding `today YYYY-MM-DD` to the code block. Relative filters, the dated today marker, and `(X years ago)` labels all use this date. The marker is suffixed with `(overridden)` to make the override visible. For example:
 
@@ -59,16 +63,6 @@ Override the reference date by adding `today YYYY-MM-DD` to the code block. Rela
 today 2000-10-25
 happens after yesterday
 happens before in two weeks
-```
-````
-
-Add `nowarnings` alongside the filters to hide warnings:
-
-````markdown
-```anniversaries
-happens after 2 weeks ago
-happens before tomorrow
-nowarnings
 ```
 ````
 
