@@ -50,6 +50,7 @@ jobs:
           VERSION: ${{ inputs.version }}
           DRAFT_INPUT: ${{ inputs.draft }}
           PRERELEASE_INPUT: ${{ inputs.prerelease }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if [[ "$REF_TYPE" != "branch" ]]; then
@@ -66,14 +67,28 @@ jobs:
             echo "Releases from non-main branches must be both draft and prerelease." >&2
             exit 1
           fi
-          if git rev-parse "$VERSION" >/dev/null 2>&1 || git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null 2>&1; then
-            echo "Tag $VERSION already exists." >&2
+          RELEASE_JSON="$(gh release view "$VERSION" --json isDraft,tagName 2>/dev/null || true)"
+          REUSE_DRAFT=false
+          if [[ -n "$RELEASE_JSON" ]]; then
+            RELEASE_TAG="$(jq -r '.tagName' <<<"$RELEASE_JSON")"
+            RELEASE_DRAFT="$(jq -r '.isDraft' <<<"$RELEASE_JSON")"
+            if [[ "$RELEASE_TAG" != "$VERSION" || "$RELEASE_DRAFT" != "true" || "$DRAFT_INPUT" != "true" ]]; then
+              echo "Release $VERSION already exists and is not a replaceable draft." >&2
+              exit 1
+            fi
+            echo "Rebuilding existing draft release $VERSION from $REF_NAME."
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" tag -fa "$VERSION" -m "Release $VERSION"
+            REUSE_DRAFT=true
+          elif git rev-parse "$VERSION" >/dev/null 2>&1 || git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null 2>&1; then
+            echo "Tag $VERSION already exists without a replaceable draft release." >&2
             exit 1
+          else
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" tag -a "$VERSION" -m "Release $VERSION"
           fi
-          git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" tag -a "$VERSION" -m "Release $VERSION"
           echo "tag=$VERSION" >> "$GITHUB_OUTPUT"
           echo "draft=$DRAFT_INPUT" >> "$GITHUB_OUTPUT"
           echo "prerelease=$PRERELEASE_INPUT" >> "$GITHUB_OUTPUT"
+          echo "reuse_draft=$REUSE_DRAFT" >> "$GITHUB_OUTPUT"
       - name: Build and package
         run: npm run release:prepare
       - name: Create installable archive
@@ -83,16 +98,34 @@ jobs:
       - name: Push tag after successful build
         env:
           TAG: ${{ steps.tag.outputs.tag }}
-        run: git push origin "$TAG"
-      - name: Publish GitHub Release
+          REUSE_DRAFT: ${{ steps.tag.outputs.reuse_draft }}
+        run: |
+          if [[ "$REUSE_DRAFT" == "true" ]]; then
+            git push --force origin "$TAG"
+          else
+            git push origin "$TAG"
+          fi
+      - name: Publish or update GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.tag.outputs.tag }}
           DRAFT: ${{ steps.tag.outputs.draft }}
           PRERELEASE: ${{ steps.tag.outputs.prerelease }}
+          REUSE_DRAFT: ${{ steps.tag.outputs.reuse_draft }}
         run: |
           args=()
           if [[ "$DRAFT" == "true" ]]; then args+=(--draft); fi
           if [[ "$PRERELEASE" == "true" ]]; then args+=(--prerelease); fi
-          gh release create "$TAG" dist/release/main.js dist/release/manifest.json dist/release/*.zip \
-            --title "$TAG" --generate-notes "${args[@]}"
+          if [[ "$REUSE_DRAFT" == "true" ]]; then
+            EXPECTED_ASSETS=$(printf '%s\n' "anniversary-reminder-${TAG}.zip" main.js manifest.json)
+            while IFS= read -r asset; do
+              if ! grep -Fxq "$asset" <<<"$EXPECTED_ASSETS"; then
+                gh release delete-asset "$TAG" "$asset" --yes
+              fi
+            done < <(gh release view "$TAG" --json assets --jq '.assets[].name')
+            gh release upload "$TAG" dist/release/main.js dist/release/manifest.json dist/release/*.zip --clobber
+            gh release edit "$TAG" --title "$TAG" --draft="$DRAFT" --prerelease="$PRERELEASE"
+          else
+            gh release create "$TAG" dist/release/main.js dist/release/manifest.json dist/release/*.zip \
+              --title "$TAG" --generate-notes "${args[@]}"
+          fi
