@@ -1,4 +1,4 @@
-# Obsidian Anniversary Tracker
+# Anniversary Reminder
 
 This lightweight plugin finds anniversary entries in your Obsidian vault and displays them in a list.
 
@@ -88,6 +88,6 @@ Run `npm test`, `npm run build`, and `npm run lint` to test, build, and lint the
 
 The root `manifest.json` is the source of truth for the plugin release version. `versions.json` maps each released plugin version to its minimum compatible Obsidian version. Use `npm version patch --no-git-tag-version`, `npm version minor --no-git-tag-version`, or `npm version major --no-git-tag-version` to bump the package version without creating npm's default `v`-prefixed tag. The version hook synchronizes `manifest.json`, adds its `minAppVersion` to `versions.json`, and stages the metadata files. Review and commit the version bump before releasing; the release workflow creates the exact unprefixed tag.
 
-For a local release build, create a clean commit whose manifest version matches a Git tag (for example, `0.6.1`, without a `v` prefix), then run `npm run release:prepare`. This generates a clean `dist/release/` containing only the required Obsidian plugin assets: `main.js` and `manifest.json` (plus optional `styles.css` if the plugin uses one). The installable zip contains those same plugin assets. The script refuses to package if the commit is not clean or the tag and manifest versions differ.
+For a local release build, create a clean commit whose manifest version matches a Git tag (for example, `0.6.1`, without a `v` prefix), then run `npm run release:prepare`. This generates a clean `dist/release/` containing only the required Obsidian plugin assets: `main.js` and `manifest.json` (plus optional `styles.css` if the plugin uses one). The script refuses to package if the commit is not clean or the tag and manifest versions differ.
 
-To automate a release, run **Actions → Release → Run workflow** on the branch to release, enter the exact manifest version, and choose whether it should be a draft or prerelease. The workflow verifies the version, runs tests and lint, builds the package, then creates and pushes the tag and publishes a GitHub release with the required plugin assets and installable zip attached. Releases from branches other than `main` must be both draft and prerelease.
+To automate a release, run **Actions → Release → Run workflow** on the branch to release, enter the exact manifest version, and choose whether it should be a draft or prerelease. The workflow verifies the version, runs tests and lint, builds the package, generates GitHub artifact attestations for `main.js` and `manifest.json`, then creates and pushes the tag and publishes a GitHub release with the required plugin assets attached. Releases from branches other than `main` must be both draft and prerelease.

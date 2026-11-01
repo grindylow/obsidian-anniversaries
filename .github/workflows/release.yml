@@ -21,6 +21,8 @@ on:
 
 permissions:
   contents: write
+  id-token: write
+  attestations: write
 
 jobs:
   release:
@@ -97,10 +99,12 @@ jobs:
           echo "force_tag=$FORCE_TAG" >> "$GITHUB_OUTPUT"
       - name: Build and package
         run: npm run release:prepare
-      - name: Create installable archive
-        env:
-          TAG: ${{ steps.tag.outputs.tag }}
-        run: zip -j "dist/release/anniversary-reminder-${TAG}.zip" dist/release/main.js dist/release/manifest.json
+      - name: Attest release assets
+        uses: actions/attest@v4
+        with:
+          subject-path: |
+            dist/release/main.js
+            dist/release/manifest.json
       - name: Push tag after successful build
         env:
           TAG: ${{ steps.tag.outputs.tag }}
@@ -124,15 +128,15 @@ jobs:
           if [[ "$DRAFT" == "true" ]]; then args+=(--draft); fi
           if [[ "$PRERELEASE" == "true" ]]; then args+=(--prerelease); fi
           if [[ "$REUSE_DRAFT" == "true" ]]; then
-            EXPECTED_ASSETS=$(printf '%s\n' "anniversary-reminder-${TAG}.zip" main.js manifest.json)
+            EXPECTED_ASSETS=$(printf '%s\n' main.js manifest.json)
             while IFS= read -r asset; do
               if ! grep -Fxq "$asset" <<<"$EXPECTED_ASSETS"; then
                 gh release delete-asset "$TAG" "$asset" --yes
               fi
             done < <(gh release view "$TAG" --json assets --jq '.assets[].name')
-            gh release upload "$TAG" dist/release/main.js dist/release/manifest.json dist/release/*.zip --clobber
+            gh release upload "$TAG" dist/release/main.js dist/release/manifest.json --clobber
             gh release edit "$TAG" --title "$TAG" --draft="$DRAFT" --prerelease="$PRERELEASE"
           else
-            gh release create "$TAG" dist/release/main.js dist/release/manifest.json dist/release/*.zip \
+            gh release create "$TAG" dist/release/main.js dist/release/manifest.json \
               --title "$TAG" --generate-notes "${args[@]}"
           fi
