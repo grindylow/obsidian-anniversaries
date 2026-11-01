@@ -67,8 +67,9 @@ jobs:
             echo "Releases from non-main branches must be both draft and prerelease." >&2
             exit 1
           fi
-          RELEASE_JSON="$(gh release view "$VERSION" --json isDraft,tagName 2>/dev/null || true)"
+          RELEASE_JSON="$(gh api --paginate "repos/${GITHUB_REPOSITORY}/releases?per_page=100" | jq -c --arg version "$VERSION" '.[] | select(.tag_name == $version) | {tagName: .tag_name, isDraft: .draft}')"
           REUSE_DRAFT=false
+          FORCE_TAG=false
           if [[ -n "$RELEASE_JSON" ]]; then
             RELEASE_TAG="$(jq -r '.tagName' <<<"$RELEASE_JSON")"
             RELEASE_DRAFT="$(jq -r '.isDraft' <<<"$RELEASE_JSON")"
@@ -77,11 +78,15 @@ jobs:
               exit 1
             fi
             echo "Rebuilding existing draft release $VERSION from $REF_NAME."
-            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" tag -fa "$VERSION" -m "Release $VERSION"
             REUSE_DRAFT=true
-          elif git rev-parse "$VERSION" >/dev/null 2>&1 || git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null 2>&1; then
-            echo "Tag $VERSION already exists without a replaceable draft release." >&2
-            exit 1
+          elif git rev-parse "$VERSION" >/dev/null 2>&1 || git ls-remote --exit-code --tags origin "refs/tags/$VERSION" >/dev/null 2>&1 || gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/$VERSION" >/dev/null 2>&1; then
+            if [[ "$DRAFT_INPUT" != "true" ]]; then
+              echo "Tag $VERSION exists without a replaceable draft release; refusing to overwrite it." >&2
+              exit 1
+            fi
+            echo "Tag $VERSION exists but no release was found. Reusing the tag for a new draft release."
+            FORCE_TAG=true
+            git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" tag -fa "$VERSION" -m "Release $VERSION"
           else
             git -c user.name="github-actions[bot]" -c user.email="41898282+github-actions[bot]@users.noreply.github.com" tag -a "$VERSION" -m "Release $VERSION"
           fi
@@ -89,6 +94,7 @@ jobs:
           echo "draft=$DRAFT_INPUT" >> "$GITHUB_OUTPUT"
           echo "prerelease=$PRERELEASE_INPUT" >> "$GITHUB_OUTPUT"
           echo "reuse_draft=$REUSE_DRAFT" >> "$GITHUB_OUTPUT"
+          echo "force_tag=$FORCE_TAG" >> "$GITHUB_OUTPUT"
       - name: Build and package
         run: npm run release:prepare
       - name: Create installable archive
@@ -99,8 +105,9 @@ jobs:
         env:
           TAG: ${{ steps.tag.outputs.tag }}
           REUSE_DRAFT: ${{ steps.tag.outputs.reuse_draft }}
+          FORCE_TAG: ${{ steps.tag.outputs.force_tag }}
         run: |
-          if [[ "$REUSE_DRAFT" == "true" ]]; then
+          if [[ "$REUSE_DRAFT" == "true" || "$FORCE_TAG" == "true" ]]; then
             git push --force origin "$TAG"
           else
             git push origin "$TAG"
