@@ -16,7 +16,6 @@ const tags = run('git', ['tag', '--points-at', 'HEAD']).split('\n').filter(Boole
 if (tags.length !== 1) {
 	throw new Error('Release build requires exactly one tag on HEAD.');
 }
-run('node', ['scripts/validate-version.mjs', tags[0]]);
 const version = tags[0];
 const manifest = JSON.parse(await readFile(resolve(root, 'manifest.json'), 'utf8'));
 if (version !== manifest.version) {

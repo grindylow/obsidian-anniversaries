@@ -11,7 +11,6 @@ export default defineConfig(
 		'scripts',
 		'version-bump.mjs',
 		'esbuild.config.mjs',
-		'version-bump.mjs',
 		'versions.json',
 		'main.js',
 		'package.json',
@@ -25,7 +24,7 @@ export default defineConfig(
 			},
 			parserOptions: {
 				projectService: {
-					allowDefaultProject: ['eslint.config.mts', 'manifest.json', 'scripts/*.mjs']
+					allowDefaultProject: ['eslint.config.mts', 'manifest.json']
 				},
 				tsconfigRootDir: import.meta.dirname,
 				extraFileExtensions: ['.json']

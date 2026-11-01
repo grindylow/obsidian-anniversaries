@@ -2,5 +2,4 @@ node_modules/
 /dist/
 
 # Ignore plugin build output and local test vaults.
-/main.js
 /testvault/
