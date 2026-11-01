@@ -79,7 +79,7 @@ jobs:
       - name: Create installable archive
         env:
           TAG: ${{ steps.tag.outputs.tag }}
-        run: zip -j "dist/release/anniversary-reminder-${TAG}.zip" dist/release/main.js dist/release/manifest.json dist/release/LICENSE
+        run: zip -j "dist/release/anniversary-reminder-${TAG}.zip" dist/release/main.js dist/release/manifest.json
       - name: Push tag after successful build
         env:
           TAG: ${{ steps.tag.outputs.tag }}
@@ -94,5 +94,5 @@ jobs:
           args=()
           if [[ "$DRAFT" == "true" ]]; then args+=(--draft); fi
           if [[ "$PRERELEASE" == "true" ]]; then args+=(--prerelease); fi
-          gh release create "$TAG" dist/release/main.js dist/release/manifest.json dist/release/LICENSE dist/release/*.zip \
+          gh release create "$TAG" dist/release/main.js dist/release/manifest.json dist/release/*.zip \
             --title "$TAG" --generate-notes "${args[@]}"
